@@ -7,7 +7,7 @@ class WordsCounter(text: RDD[String], val stopWords: Array[String]) extends Seri
 
   private def splitWords (words: String): Array[String] = {
     words
-      .split("/[\\W]+/")
+      .split("[\\W+]")
       .filter(word => !word.equals(""))
   }
 
@@ -16,7 +16,7 @@ class WordsCounter(text: RDD[String], val stopWords: Array[String]) extends Seri
   }
 
   private def isValidWord(word: String): Boolean = {
-    stopWords.indexOf(word) == -1
+    !stopWords.contains(word)
   }
 
   def calculate (): RDD[String] = {
@@ -33,7 +33,7 @@ class WordsCounter(text: RDD[String], val stopWords: Array[String]) extends Seri
 object WordCounter {
   def main(args: Array[String]): Unit = {
     val session = SparkSession.builder.master("local[2]").appName("WordCounter").getOrCreate()
-    val stopWords: Array[String] = Array("A", "EL", "NUNCA", "CAPERUCITA")
+    val stopWords: Array[String] = Array("A", "EL", "NUNCA")
     val texto = session.sparkContext.textFile("src/main/resources/texto.txt")
     val wordsCounter = new WordsCounter(texto, stopWords)
 
