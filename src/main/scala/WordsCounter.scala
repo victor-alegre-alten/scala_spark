@@ -1,7 +1,7 @@
 import org.apache.commons.lang3.StringUtils
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{SparkSession}
 
 class WordsCounter(text: RDD[String], val stopWords: Array[String]) extends Serializable {
 
@@ -37,7 +37,6 @@ object WordCounter {
   def main(args: Array[String]): Unit = {
     val session = SparkSession.builder.master("local[2]").appName("WordCounter").getOrCreate()
     import session.implicits._
-    import org.apache.spark.sql.functions._
 
     val stopWords: Array[String] = Array("A", "EL", "NUNCA")
     val texto = session.sparkContext.textFile("src/main/resources/texto.txt")
