@@ -3,6 +3,7 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.util.LongAccumulator
 
 class WordsFilter(text: RDD[String], val stopWords: Array[String], val totalDeleted: LongAccumulator)
