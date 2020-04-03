@@ -54,10 +54,10 @@ object WordCounter {
     val wordsFilter = new WordsFilter(texto, stopWords.value, totalDeletedAcc)
 
     // Filtramos las palabras
-    val calculatedRDD = wordsFilter.filter()
+    val filteredRDD = wordsFilter.filter()
 
     // Pasamos a df y calculamos las palabras
-    val orderedDataFrame = calculatedRDD
+    val orderedDataFrame = filteredRDD
       .toDF("word")
       .groupBy("word")
       .count()

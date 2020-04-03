@@ -27,10 +27,10 @@ object WordCounterStream {
       val wordsFilter = new WordsFilter(texto, stopWords.value, totalDeletedAcc)
 
       // Filtramos las palabras
-      val calculatedStream = wordsFilter.filter()
+      val filteredRDD = wordsFilter.filter()
 
       // Convertimos a dataframe
-      val orderedDataFrame = calculatedStream
+      val orderedDataFrame = filteredRDD
         .toDF("word")
         .groupBy("word")
         .count()
