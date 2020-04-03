@@ -14,22 +14,25 @@ object WordCounterStream {
     import session.implicits._
 
     // Creamos un streaming
-    val streaming = new StreamingContext(session.sparkContext, Seconds(5))
+    val streaming = new StreamingContext(session.sparkContext, Seconds(10))
 
     // Obtenemos el texto y creamos acumuladores y broadcasts
     val textStreams: DStream[String] = streaming.socketTextStream("localhost", 10000)
-    val totalDeletedAcc: LongAccumulator = session.sparkContext.longAccumulator
+    val totalDeletedWords: LongAccumulator = session.sparkContext.longAccumulator
     val stopWords: Broadcast[Array[String]] = session.sparkContext.broadcast(Array("A", "EL", "NUNCA", "CAPERUCITA"))
 
     // Procesamos cada Stream
     textStreams.foreachRDD(texto => {
+      // Creamos acumulador de palabras eliminadas
+      val streammDeletedWords: LongAccumulator = session.sparkContext.longAccumulator
+
       // Creamos el filtrador
-      val wordsFilter = new WordsFilter(texto, stopWords.value, totalDeletedAcc)
+      val wordsFilter = new WordsFilter(texto, stopWords.value, streammDeletedWords)
 
       // Filtramos las palabras
       val filteredRDD = wordsFilter.filter()
 
-      // Convertimos a dataframe
+      // Convertimos a dataframe y lo agrupamos, contamos y mostramos
       val orderedDataFrame = filteredRDD
         .toDF("word")
         .groupBy("word")
@@ -37,6 +40,16 @@ object WordCounterStream {
         .orderBy(desc("count"))
 
       orderedDataFrame.show()
+
+      // Sumamos las palabras eliminadas de este stream al total
+      totalDeletedWords.add(wordsFilter.totalDeleted.value)
+
+      // Mostramos palabras eliminadas
+      println(
+        "Palabras eliminadas:\n" +
+        "\tEsta vuelta\t\t=>\t" + wordsFilter.totalDeleted.value + " palabras\n" +
+        "\tTotal\t\t\t=>\t" + totalDeletedWords.value + " palabras"
+      )
     })
 
     // Iniciamos nuestro servidor en streaming

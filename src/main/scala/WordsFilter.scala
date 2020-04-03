@@ -18,7 +18,7 @@ class WordsFilter(text: RDD[String], val stopWords: Array[String], val totalDele
   private def isValidWord(word: String): Boolean = {
     val contains = stopWords.contains(word)
 
-    if (!contains){
+    if (contains){
       totalDeleted.add(1)
     }
 
