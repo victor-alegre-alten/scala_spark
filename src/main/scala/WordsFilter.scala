@@ -1,10 +1,11 @@
 import org.apache.commons.lang3.StringUtils
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.util.LongAccumulator
 
-class WordsCounter(text: RDD[String], val stopWords: Array[String], val totalDeleted: LongAccumulator)
+class WordsFilter(text: RDD[String], val stopWords: Array[String], val totalDeleted: LongAccumulator)
   extends Serializable {
 
   private def splitWords (words: String): Array[String] = {
@@ -23,7 +24,7 @@ class WordsCounter(text: RDD[String], val stopWords: Array[String], val totalDel
     !contains
   }
 
-  def calculate (): RDD[String] = {
+  def filter (): RDD[String] = {
     text
       .flatMap(splitWords)
       .map(StringUtils.stripAccents)
@@ -39,29 +40,35 @@ class WordsCounter(text: RDD[String], val stopWords: Array[String], val totalDel
 
 object WordCounter {
   def main(args: Array[String]): Unit = {
+    // Creamos la sesión de Spark e importamos métodos de RDDs neccesarios
     val session = SparkSession.builder.master("local[2]").appName("WordCounter").getOrCreate()
     import session.implicits._
 
-    val stopWords: Array[String] = Array("A", "EL", "NUNCA", "CAPERUCITA")
+    // Obtenemos el texto y creamos acumuladores y broadcasts
     val texto = session.sparkContext.textFile("src/main/resources/texto.txt")
     val totalDeletedAcc: LongAccumulator = session.sparkContext.longAccumulator
+    val stopWords: Broadcast[Array[String]] = session.sparkContext.broadcast(Array("A", "EL", "NUNCA", "CAPERUCITA"))
 
-    val wordsCounter = new WordsCounter(texto, stopWords, totalDeletedAcc)
+    // Creamos el contador
+    val wordsFilter = new WordsFilter(texto, stopWords.value, totalDeletedAcc)
 
-    val calculatedRDD = wordsCounter.calculate()
+    // Filtramos las palabras
+    val calculatedRDD = wordsFilter.filter()
 
+    // Pasamos a df y calculamos las palabras
     val orderedDataFrame = calculatedRDD
       .toDF("word")
       .groupBy("word")
       .count()
       .orderBy(desc("count"))
 
-
+    // Mostramos el df
     orderedDataFrame.show()
-    println("Eliminadas: " + wordsCounter.totalDeleted.value)
 
+    // Mostramos palabras eliminadas
+    println("Eliminadas: " + wordsFilter.totalDeleted.value)
 
-
+    // Paramos la sesión de Spark
     session.stop()
   }
 }
